@@ -58,7 +58,7 @@ import com.lrs.pcx.JavaPCX;
 @SeeAlso({})
 @ReadsAttributes({ @ReadsAttribute(attribute = "", description = "") })
 @WritesAttributes({ @WritesAttribute(attribute = "", description = "") })
-public class DownloadPCXFiles extends AbstractProcessor {
+public class MyProcessor extends AbstractProcessor {
 
 	public static final PropertyDescriptor DOWNLOAD_DIR = new PropertyDescriptor.Builder().name("DOWNLOAD_DIR")
 			.displayName("Download Directory").description("Document download directory").required(true)

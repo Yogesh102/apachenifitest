@@ -27,7 +27,7 @@ public class MyProcessorTest {
 
     @BeforeEach
     public void init() {
-        testRunner = TestRunners.newTestRunner(DownloadPCXFiles.class);
+        testRunner = TestRunners.newTestRunner(MyProcessor.class);
     }
 
     @Test
