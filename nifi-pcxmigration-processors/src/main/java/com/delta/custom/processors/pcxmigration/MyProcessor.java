@@ -22,8 +22,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -50,6 +52,7 @@ import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.processor.io.OutputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.apache.nifi.util.StringUtils;
 
 import com.lrs.pcx.JavaPCX;
 
@@ -70,6 +73,14 @@ public class MyProcessor extends AbstractProcessor {
 
 	public static final PropertyDescriptor USERNAME = new PropertyDescriptor.Builder().name("PCX_USRENAME")
 			.displayName("Username").description("PCX Username").required(true)
+			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
+
+	public static final PropertyDescriptor START_DATE = new PropertyDescriptor.Builder().name("START_DATE")
+			.displayName("STARTDATE").description("Start date").required(false)
+			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
+
+	public static final PropertyDescriptor END_DATE = new PropertyDescriptor.Builder().name("END_DATE")
+			.displayName("ENDDATE").description("End date").required(true)
 			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
 
 	public static final PropertyDescriptor PASSWORD = new PropertyDescriptor.Builder().name("PCX_PASSWORD")
@@ -94,6 +105,8 @@ public class MyProcessor extends AbstractProcessor {
 		descriptors.add(PCX_URL);
 		descriptors.add(USERNAME);
 		descriptors.add(PASSWORD);
+		descriptors.add(START_DATE);
+		descriptors.add(END_DATE);
 		descriptors = Collections.unmodifiableList(descriptors);
 
 		relationships = new HashSet<>();
@@ -146,7 +159,10 @@ public class MyProcessor extends AbstractProcessor {
 				String pcx_url = context.getProperty(PCX_URL).getValue();
 				String username = context.getProperty(USERNAME).getValue();
 				String password = context.getProperty(PASSWORD).getValue();
-
+				String start_date = context.getProperty(START_DATE).getValue();
+				String end_date = context.getProperty(END_DATE).getValue();
+				LocalDate startDateFilter = StringUtils.isBlank(start_date) ? null : convertDate(start_date);
+				LocalDate endDateFilter = convertDate(end_date);
 				// Connect to PCX
 				System.out.println("JavaPCX Version: \t" + JavaPCX.Version);
 				pcx.Logon(pcx_url, username, password, "", "");
@@ -157,8 +173,8 @@ public class MyProcessor extends AbstractProcessor {
 					getLogger().info("Processing Record : " + path);
 
 					for (String oneFileName : getDocuments(pcx, path)) {
-						List<String> revisionDocumentIdList = getRevisionDocumentIDs(pcx, "/" + path + "/",
-								oneFileName);
+						List<String> revisionDocumentIdList = getRevisionDocumentIDs(pcx, "/" + path + "/", oneFileName,
+								startDateFilter, endDateFilter);
 						int revIndex = revisionDocumentIdList.size();
 						for (String oneRevisionDocumentID : revisionDocumentIdList) {
 							downloadDocumentByID(pcx, "/" + path + "/", oneFileName, oneRevisionDocumentID, revIndex,
@@ -184,40 +200,96 @@ public class MyProcessor extends AbstractProcessor {
 	public static List<String> getDocuments(JavaPCX pcx, String path) {
 		List<String> docList = new ArrayList<String>();
 
-		int res = pcx.DocumentListInitByPath(path);
-		// pcx.FolderListReqAttr("folder_path"); // optionally set to return limited
-		// data
-		pcx.FolderListReqAttr("file");
-		pcx.DocumentListComplete();
-		//pcx.yes ("array_max", "2");
-		if (!pcx.Error) {
-			for (int i = 0; i < pcx.DocumentListGetCount(); i++) {
-				docList.add(pcx.DocumentListGetAttr("file", i));
+		boolean more = true;
+		String previous = "";
+
+		while (more) {
+			more = false;
+			pcx.DocumentListInitByPath(path);
+			pcx.FolderListReqAttr("file");
+			pcx.DocumentRevListSetAttr("array_max", "500");
+			pcx.DocumentRevListSetAttr("previous_name", previous);
+			pcx.DocumentListComplete();
+			System.out.println("number of docs in batch" + pcx.DocumentListGetCount());
+			if (!pcx.Error) {
+				for (int i = 0; i < pcx.DocumentListGetCount(); i++) {
+					more = true;
+					previous = pcx.DocumentListGetAttr("file", i);
+					docList.add(pcx.DocumentListGetAttr("file", i));
+				}
+			} else {
+				System.out.println("Error getDocument: " + pcx.ErrorDescription);
 			}
-		} else {
-			System.out.println("Error getDocument: " + pcx.ErrorDescription);
+			
 		}
+		
+		System.out.println("total number of docs" + docList.size());
 		return docList;
 	}
 
-	public static List<String> getRevisionDocumentIDs(JavaPCX pcx, String path, String fileName) {
+	public static List<String> getRevisionDocumentIDs(JavaPCX pcx, String path, String fileName,
+			LocalDate startDateFilter, LocalDate endDateFilter) {
+		System.out.println("Document Revision Path: " + path + fileName);
 		List<String> docRevisionList = new ArrayList<String>();
-		pcx.DocumentRevListInitByPath(path + fileName);
-		pcx.DocumentRevListComplete();
 
-		if (!pcx.Error) {
-			System.out.println("Num Docs Revisions: " + pcx.DocumentRevListGetCount());
-			for (int i = 0; i < pcx.DocumentRevListGetCount(); i++) {
-				docRevisionList.add(pcx.DocumentRevListGetAttr("document_id", i));
+		boolean more = true;
+		String previousRevisionId = "";
+		String previousImportDate = "";
+		while (more) {
+			more = false;
+			// System.out.println("\tpreviousRevisionId: \t" + previousRevisionId);
+			// Make document revision list request. Will fetch 500 revisions per loop
+			pcx.DocumentRevListInitByPath(path + fileName);
+			pcx.DocumentRevListSetAttr("array_max", "500");
+
+			// Both previous_revision_id and previous_import_date need to be set for
+			// successive iterations
+			if (!previousRevisionId.equals("")) {
+				pcx.DocumentRevListSetAttr("previous_revision_id", previousRevisionId);
+				pcx.DocumentRevListSetAttr("previous_import_date", previousImportDate);
 			}
-		} else {
-			System.out.println("Error getDocumentRevisions: " + pcx.ErrorDescription);
+			pcx.DocumentRevListComplete();
+
+			// Process document revision list response
+			if (!pcx.Error) {
+				int docRevListCount = pcx.DocumentRevListGetCount();
+				System.out.println("Num Document Revisions in batch: " + docRevListCount);
+
+				for (int i = 0; i < docRevListCount; i++) {
+					more = true;
+					String documentId = pcx.DocumentRevListGetAttr("document_id", i);
+					String revisionId = pcx.DocumentRevListGetAttr("revision_id", i);
+					String documentImportDate = pcx.DocumentRevListGetAttr("import_date", i);
+
+					previousRevisionId = revisionId;
+					previousImportDate = documentImportDate;
+
+					// Format PCX doc import date for comparison to date range filters
+					DateTimeFormatter f = DateTimeFormatter.ofPattern("HH:mm:ss MMMM/dd/yyyy");
+					LocalDate formattedDocumentImportDate = LocalDate.parse(documentImportDate, f);
+					// Filter document export on end-date only
+					if (endDateFilter != null && startDateFilter == null
+							&& formattedDocumentImportDate.isAfter(endDateFilter)) {
+						continue;
+					}
+					// Filter document export on start-date and end-date
+					if (endDateFilter != null && startDateFilter != null) {
+						if (formattedDocumentImportDate.isBefore(startDateFilter)
+								|| formattedDocumentImportDate.isAfter(endDateFilter)) {
+							continue;
+						}
+					}
+
+					docRevisionList.add(documentId);
+				}
+			} else {
+				System.out.println("Error: " + pcx.ErrorDescription);
+			}
 		}
+		System.out.println("Total Num of Document Revisions in batch:"+ docRevisionList.size());
 		return docRevisionList;
 	}
 
-	// Created so that downloaded document considers Document ID of desired
-	// revision. HY 1/31/2022
 	public static void downloadDocumentByID(JavaPCX pcx, String path, String fileName, String revisionDocumentID,
 			int revIndex, String downloadDir) {
 		String concatFileName, filePrefix, fileExtension, importDate;
@@ -239,7 +311,7 @@ public class MyProcessor extends AbstractProcessor {
 		DateTimeFormatter f2 = DateTimeFormatter.ofPattern("yyyyMMddkkmmss");
 		String filenameTimestamp = f2.format(formattedImportDateTime);
 
-		concatFileName = filePrefix + "-" + filenameTimestamp + "." + fileExtension;
+		concatFileName = standardizeFileName(filePrefix + "-" + filenameTimestamp + "." + fileExtension);
 
 		pcx.ReadFileInitByID(revisionDocumentID, downloadDir + concatFileName);
 		pcx.ReadFileComplete();
@@ -251,6 +323,17 @@ public class MyProcessor extends AbstractProcessor {
 		} else {
 			System.out.println("Error Download: " + pcx.ErrorDescription);
 		}
+	}
+
+	public static String standardizeFileName(String fileName) {
+
+		// Remove trailing spaces
+		String trimmed = fileName.replaceAll("\\s+$", "");
+
+		// Remove multiple consecutive spaces
+		trimmed = trimmed.replaceAll("\\s+", " ");
+
+		return trimmed;
 	}
 
 	public static void generateMetadataXMLFile(String fileName, String folderPath, LocalDateTime importDate,
@@ -269,6 +352,17 @@ public class MyProcessor extends AbstractProcessor {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public static LocalDate convertDate(String dateArg) {
+		DateTimeFormatter f = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+		LocalDate date = null;
+		try {
+			date = LocalDate.parse(dateArg, f);
+		} catch (DateTimeParseException e) {
+			System.out.println("Please enter date in YYYY-MM-DD format");
+		}
+		return date;
 	}
 
 }

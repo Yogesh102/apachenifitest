@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Created-By: Apache NiFi Nar Maven Plugin 1.5.0
+Build-Jdk-Spec: 11
+Nar-Id: nifi-pcxmigration-nar
+Nar-Group: com.delta.custom
+Nar-Version: 1.0
+Build-Tag: nifi-1.22.0-RC1
+Build-Branch: main
+Build-Revision: 18ec029
+Build-Timestamp: 2023-06-06T19:20:39Z
+Clone-During-Instance-Class-Loading: false
+
