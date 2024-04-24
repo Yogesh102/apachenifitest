@@ -174,13 +174,13 @@ public class MyProcessor extends AbstractProcessor {
 
 					for (String oneFileName : getDocuments(pcx, path)) {
 						List<String> revisionDocumentIdList = getRevisionDocumentIDs(pcx, "/" + path + "/", oneFileName,
-								startDateFilter, endDateFilter);
-						int revIndex = revisionDocumentIdList.size();
-						for (String oneRevisionDocumentID : revisionDocumentIdList) {
-							downloadDocumentByID(pcx, "/" + path + "/", oneFileName, oneRevisionDocumentID, revIndex,
-									downloadDir);
-							revIndex--;
-						}
+								startDateFilter, endDateFilter,downloadDir);
+						/*
+						 * int revIndex = revisionDocumentIdList.size(); for (String
+						 * oneRevisionDocumentID : revisionDocumentIdList) { downloadDocumentByID(pcx,
+						 * "/" + path + "/", oneFileName, oneRevisionDocumentID, revIndex, downloadDir);
+						 * revIndex--; }
+						 */
 					}
 					getLogger().info("Completed Record : " + path);
 				}
@@ -228,7 +228,7 @@ public class MyProcessor extends AbstractProcessor {
 	}
 
 	public static List<String> getRevisionDocumentIDs(JavaPCX pcx, String path, String fileName,
-			LocalDate startDateFilter, LocalDate endDateFilter) {
+			LocalDate startDateFilter, LocalDate endDateFilter,String downloadDir) {
 		System.out.println("Document Revision Path: " + path + fileName);
 		List<String> docRevisionList = new ArrayList<String>();
 
@@ -237,6 +237,7 @@ public class MyProcessor extends AbstractProcessor {
 		String previousImportDate = "";
 		while (more) {
 			more = false;
+			docRevisionList = new ArrayList<String>();
 			// System.out.println("\tpreviousRevisionId: \t" + previousRevisionId);
 			// Make document revision list request. Will fetch 500 revisions per loop
 			pcx.DocumentRevListInitByPath(path + fileName);
@@ -285,6 +286,14 @@ public class MyProcessor extends AbstractProcessor {
 			} else {
 				System.out.println("Error: " + pcx.ErrorDescription);
 			}
+			
+			int revIndex = docRevisionList.size();
+			for (String oneRevisionDocumentID : docRevisionList) {
+				downloadDocumentByID(pcx, "/" + path + "/", fileName, oneRevisionDocumentID, revIndex,
+						downloadDir);
+				revIndex--;
+			}
+			
 		}
 		System.out.println("Total Num of Document Revisions in batch:"+ docRevisionList.size());
 		return docRevisionList;
