@@ -9,12 +9,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -26,7 +20,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Date;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -87,18 +80,6 @@ public class MyProcessor extends AbstractProcessor {
 			.displayName("Password").description("PCX Password").required(true)
 			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
 
-	public static final PropertyDescriptor DATABASE_URL = new PropertyDescriptor.Builder().name("DATABASE_URL")
-			.displayName("Database URL").description("JDBC Database URL").required(true)
-			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
-
-	public static final PropertyDescriptor DATABASE_USER = new PropertyDescriptor.Builder().name("DATABASE_USER")
-			.displayName("Database User").description("Database Username").required(true)
-			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
-
-	public static final PropertyDescriptor DATABASE_PASSWORD = new PropertyDescriptor.Builder()
-			.name("DATABASE_PASSWORD").displayName("Database Password").description("Database Password").required(true)
-			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
-
 	public static final Relationship SUCCESS = new Relationship.Builder().name("SUCCESS")
 			.description("Files Downloaded Successfully").build();
 
@@ -117,9 +98,6 @@ public class MyProcessor extends AbstractProcessor {
 		descriptors.add(PASSWORD);
 		descriptors.add(START_DATE);
 		descriptors.add(END_DATE);
-		descriptors.add(DATABASE_URL);
-		descriptors.add(DATABASE_USER);
-		descriptors.add(DATABASE_PASSWORD);
 		descriptors = Collections.unmodifiableList(descriptors);
 
 		relationships = new HashSet<>();
@@ -184,8 +162,8 @@ public class MyProcessor extends AbstractProcessor {
 						logger.info("Processing Record: {}", path);
 
 						for (String oneFileName : getDocuments(pcx, path)) {
-							getRevisionDocumentIDs(pcx, "/" + path + "/", oneFileName, startDateFilter, endDateFilter,
-									downloadDir, context);
+							List<String> revisionDocumentIdList = getRevisionDocumentIDs(pcx, "/" + path + "/",
+									oneFileName, startDateFilter, endDateFilter, downloadDir);
 						}
 						logger.info("Completed Record: {}", path);
 					}
@@ -230,15 +208,15 @@ public class MyProcessor extends AbstractProcessor {
 		return docList;
 	}
 
-	public void getRevisionDocumentIDs(JavaPCX pcx, String path, String fileName, LocalDate startDateFilter,
-			LocalDate endDateFilter, String downloadDir, final ProcessContext context) {
+	public List<String> getRevisionDocumentIDs(JavaPCX pcx, String path, String fileName, LocalDate startDateFilter,
+			LocalDate endDateFilter, String downloadDir) {
+		List<String> docRevisionList = new ArrayList<>();
 		boolean more = true;
 		String previousRevisionId = "";
 		String previousImportDate = "";
-		List<String> docRevisionList = new ArrayList<>();
-
 		while (more) {
 			more = false;
+			// docRevisionList = new ArrayList<>();
 			pcx.DocumentRevListInitByPath(path + fileName);
 			pcx.DocumentRevListSetAttr("array_max", "100");
 
@@ -250,6 +228,8 @@ public class MyProcessor extends AbstractProcessor {
 
 			if (!pcx.Error) {
 				int docRevListCount = pcx.DocumentRevListGetCount();
+
+				// totalRevisions += docRevListCount;
 
 				for (int i = 0; i < docRevListCount; i++) {
 					more = true;
@@ -283,22 +263,22 @@ public class MyProcessor extends AbstractProcessor {
 
 		if (docRevisionList != null && docRevisionList.size() > 0) {
 			// Download the current version original doc
-			downloadDocumentByID(pcx, "/" + path + "/", fileName, docRevisionList.get(0), 0, downloadDir, path,
-					context);
+			downloadDocumentByID(pcx, "/" + path + "/", fileName, docRevisionList.get(0), 0, downloadDir, path);
 			// download all the version
 			for (int i = 0; i < docRevisionList.size() - 1; i++) {
 				String oneRevisionDocumentID = docRevisionList.get(i);
 				int versionIndex = docRevisionList.size() - i;
 				downloadDocumentByID(pcx, "/" + path + "/", fileName, oneRevisionDocumentID, versionIndex, downloadDir,
-						path, context);
+						path);
 			}
 		}
 
-		logger.info("Total number of document revisions for {}: {}", fileName, docRevisionList.size());
+		logger.info("Total number of document revisions: {}", docRevisionList.size());
+		return docRevisionList;
 	}
 
 	public void downloadDocumentByID(JavaPCX pcx, String path, String fileName, String revisionDocumentID,
-			int versionIndex, String downloadDir, String folderPath, final ProcessContext context) {
+			int versionIndex, String downloadDir, String folderPath) {
 		String concatFileName, filePrefix, fileExtension, importDate;
 
 		try {
@@ -314,17 +294,21 @@ public class MyProcessor extends AbstractProcessor {
 			DateTimeFormatter f2 = DateTimeFormatter.ofPattern("yyyyMMddkkmmss");
 			String filenameTimestamp = f2.format(formattedImportDateTime);
 
+			// concatFileName = standardizeFileName(filePrefix + "-" + filenameTimestamp +
+			// "-" + revisionDocumentID + ".v" + versionIndex + "." + fileExtension);
+
 			concatFileName = versionIndex == 0 ? standardizeFileName(filePrefix + "." + fileExtension)
 					: standardizeFileName(filePrefix + "." + fileExtension + ".v" + versionIndex);
 
 			// Create folder if it doesn't exist
 			String fullFolderPath = Paths.get(downloadDir, folderPath).toString();
 			Files.createDirectories(Paths.get(fullFolderPath));
-			logger.info("Full folderpath" + fullFolderPath);
+
 			File file = new File(Paths.get(fullFolderPath, concatFileName).toString());
+
+			logger.info("Full folderpath" + fullFolderPath);
 			if (file.exists()) {
 				logger.info("File already exists - skipping download: {}", concatFileName);
-				logDownloadStatus(context, folderPath, fileName, versionIndex, "success", null);
 			} else {
 				pcx.ReadFileInitByID(revisionDocumentID, file.getAbsolutePath());
 				pcx.ReadFileComplete();
@@ -333,15 +317,12 @@ public class MyProcessor extends AbstractProcessor {
 					logger.info("Read file complete: {}", concatFileName);
 					generateMetadataXMLFile(filePrefix + "." + fileExtension, path, formattedImportDateTime,
 							fullFolderPath, versionIndex);
-					logDownloadStatus(context, folderPath, fileName, versionIndex, "success", null);
 				} else {
 					logger.error("Error Download: {}", pcx.ErrorDescription);
-					logDownloadStatus(context, folderPath, fileName, versionIndex, "failure", pcx.ErrorDescription);
 				}
 			}
 		} catch (Exception e) {
 			logger.error("Error downloading document by ID: {}", revisionDocumentID, e);
-			logDownloadStatus(context, folderPath, fileName, versionIndex, "failure", e.getMessage());
 		}
 	}
 
@@ -376,52 +357,5 @@ public class MyProcessor extends AbstractProcessor {
 			logger.error("Please enter date in YYYY-MM-DD format", e);
 		}
 		return date;
-	}
-
-	public void logDownloadStatus(final ProcessContext context, String folderPath, String fileName, int version,
-			String status, String errorMessage) {
-		try (Connection conn = DriverManager.getConnection(context.getProperty(DATABASE_URL).getValue(),
-				context.getProperty(DATABASE_USER).getValue(), context.getProperty(DATABASE_PASSWORD).getValue())) {
-			String sql = "INSERT INTO documents (folder_path, file_name, version, download_status, error_message, timestamp) VALUES (?, ?, ?, ?, ?, ?)";
-			try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-				pstmt.setString(1, folderPath);
-				pstmt.setString(2, fileName);
-				pstmt.setInt(3, version);
-				pstmt.setString(4, status);
-				pstmt.setString(5, errorMessage);
-				pstmt.setTimestamp(6, new Timestamp(new Date().getTime()));
-				pstmt.executeUpdate();
-			}
-		} catch (SQLException e) {
-			logger.error("Error logging download status", e);
-		}
-	}
-
-	public void generateReconciliationReport(final ProcessContext context) {
-		try (Connection conn = DriverManager.getConnection(context.getProperty(DATABASE_URL).getValue(),
-				context.getProperty(DATABASE_USER).getValue(), context.getProperty(DATABASE_PASSWORD).getValue())) {
-			String sql = "SELECT COUNT(*) AS total_files, "
-					+ "SUM(CASE WHEN download_status = 'success' THEN 1 ELSE 0 END) AS downloaded_files, "
-					+ "SUM(CASE WHEN download_status = 'failure' THEN 1 ELSE 0 END) AS failed_files "
-					+ "FROM documents";
-			try (PreparedStatement pstmt = conn.prepareStatement(sql); ResultSet rs = pstmt.executeQuery()) {
-				if (rs.next()) {
-					int totalFiles = rs.getInt("total_files");
-					int downloadedFiles = rs.getInt("downloaded_files");
-					int failedFiles = rs.getInt("failed_files");
-
-					String reportSql = "INSERT INTO reconciliation_reports (total_files, downloaded_files, failed_files, timestamp) VALUES (?, ?, ?, ?)";
-					try (PreparedStatement reportPstmt = conn.prepareStatement(reportSql)) {
-						reportPstmt.setInt(1, totalFiles);
-						reportPstmt.setInt(2, downloadedFiles);
-						reportPstmt.setInt(3, failedFiles);
-						reportPstmt.setTimestamp(4, new Timestamp(new Date().getTime()));
-						reportPstmt.executeUpdate();
-					}
-				}
-			}
-		} catch (SQLException e) {
-			logger.error("Error generating reconciliation report", e);
-		}
 	}
 }
