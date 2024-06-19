@@ -286,7 +286,7 @@ public class MyProcessor extends AbstractProcessor {
 			downloadDocumentByID(pcx, "/" + path + "/", fileName, docRevisionList.get(0), 0, downloadDir, path,
 					context);
 			// download all the version
-			for (int i = 0; i < docRevisionList.size() - 1; i++) {
+			for (int i = 0; i < docRevisionList.size(); i++) {
 				String oneRevisionDocumentID = docRevisionList.get(i);
 				int versionIndex = docRevisionList.size() - i;
 				downloadDocumentByID(pcx, "/" + path + "/", fileName, oneRevisionDocumentID, versionIndex, downloadDir,
@@ -401,7 +401,8 @@ public class MyProcessor extends AbstractProcessor {
 		try (Connection conn = DriverManager.getConnection(context.getProperty(DATABASE_URL).getValue(),
 				context.getProperty(DATABASE_USER).getValue(), context.getProperty(DATABASE_PASSWORD).getValue())) {
 			String sql = "SELECT COUNT(*) AS total_files, "
-					+ "SUM(CASE WHEN download_status = 'success' THEN 1 ELSE 0 END) AS downloaded_files, "
+					+ "SUM(CASE WHEN download_status = 'success' THEN 1 :q! 0 END) AS downloaded_files, "
+					
 					+ "SUM(CASE WHEN download_status = 'failure' THEN 1 ELSE 0 END) AS failed_files "
 					+ "FROM documents";
 			try (PreparedStatement pstmt = conn.prepareStatement(sql); ResultSet rs = pstmt.executeQuery()) {
