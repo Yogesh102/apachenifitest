@@ -15,3 +15,14 @@ CREATE TABLE reconciliation_reports (
     failed_files NUMBER,
     timestamp TIMESTAMP
 );
+
+
+CREATE TABLE migration_tracker (
+    id SERIAL PRIMARY KEY,
+    folder_path VARCHAR(255),
+    from_date TIMESTAMP,
+    to_date TIMESTAMP,
+    start_time TIMESTAMP,
+    end_time TIMESTAMP,
+    status VARCHAR(50)
+);
