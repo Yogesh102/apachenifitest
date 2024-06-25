@@ -16,6 +16,8 @@ CREATE TABLE reconciliation_reports (
     timestamp TIMESTAMP
 );
 
+ALTER TABLE documents ADD COLUMN migration_tracker_id INT REFERENCES migration_tracker(id);
+
 
 CREATE TABLE migration_tracker (
     id SERIAL PRIMARY KEY,
