@@ -51,6 +51,8 @@ import org.apache.nifi.processor.util.StandardValidators;
 import org.apache.nifi.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.sql.CallableStatement;
+import java.sql.Types;
 
 import com.lrs.pcx.JavaPCX;
 
@@ -189,18 +191,17 @@ public class MyProcessor extends AbstractProcessor {
                             context.getProperty(DATABASE_USER).getValue(), context.getProperty(DATABASE_PASSWORD).getValue());
                     conn.setAutoCommit(false);
 
-                    // Insert into migration_tracker table
-                    String insertTrackerSQL = "INSERT INTO migration_tracker (csv_file_name, from_date, to_date, start_time, status) VALUES (?, ?, ?, ?, ?) RETURNING id";
-                    pstmt = conn.prepareStatement(insertTrackerSQL);
-                    pstmt.setString(1, csvFileName);
-                    pstmt.setTimestamp(2, Timestamp.valueOf(startDateFilter.atStartOfDay()));
-                    pstmt.setTimestamp(3, Timestamp.valueOf(endDateFilter.atStartOfDay()));
-                    pstmt.setTimestamp(4, Timestamp.valueOf(startTime));
-                    pstmt.setString(5, "In Progress");
-                    ResultSet rs = pstmt.executeQuery();
-                    if (rs.next()) {
-                        migrationTrackerId = rs.getInt("id");
-                    }
+                    // Insert into migration_tracker table using CallableStatement
+                    String insertTrackerSQL = "{ CALL INSERT INTO migration_tracker (csv_file_name, from_date, to_date, start_time, status) VALUES (?, ?, ?, ?, ?) RETURNING id INTO ? }";
+                    CallableStatement cstmt = conn.prepareCall(insertTrackerSQL);
+                    cstmt.setString(1, csvFileName);
+                    cstmt.setTimestamp(2, Timestamp.valueOf(startDateFilter.atStartOfDay()));
+                    cstmt.setTimestamp(3, Timestamp.valueOf(endDateFilter.atStartOfDay()));
+                    cstmt.setTimestamp(4, Timestamp.valueOf(startTime));
+                    cstmt.setString(5, "In Progress");
+                    cstmt.registerOutParameter(6, Types.INTEGER);
+                    cstmt.execute();
+                    migrationTrackerId = cstmt.getInt(6);
 
                     for (CSVRecord record : records) {
                         String path = record.get("folderpath");
