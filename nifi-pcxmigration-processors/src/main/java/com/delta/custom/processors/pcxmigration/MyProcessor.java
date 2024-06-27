@@ -71,7 +71,7 @@ public class MyProcessor extends AbstractProcessor {
             .displayName("PCX URL").description("PCX URL (Add port eg : rc-hp28.ut.dentegra.lab:5805)").required(true)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
 
-    public static final PropertyDescriptor USERNAME = new PropertyDescriptor.Builder().name("PCX_USERNAME")
+    public static final PropertyDescriptor USERNAME = new PropertyDescriptor.Builder().name("PCX_USRENAME")
             .displayName("Username").description("PCX Username").required(true)
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
 
