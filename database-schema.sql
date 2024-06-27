@@ -16,7 +16,11 @@ CREATE TABLE reconciliation_reports (
     timestamp TIMESTAMP
 );
 
-ALTER TABLE documents ADD COLUMN migration_tracker_id INT REFERENCES migration_tracker(id);
+ALTER TABLE documents ADD migration_tracker_id NUMBER;
+
+ALTER TABLE documents ADD CONSTRAINT fk_migration_tracker
+FOREIGN KEY (migration_tracker_id)
+REFERENCES migration_tracker(id);
 
 
 CREATE TABLE migration_tracker (
