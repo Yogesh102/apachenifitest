@@ -15,3 +15,18 @@ CREATE TABLE reconciliation_reports (
     failed_files NUMBER,
     timestamp TIMESTAMP
 );
+
+ALTER TABLE documents ADD COLUMN migration_tracker_id INT REFERENCES migration_tracker(id);
+
+
+CREATE TABLE migration_tracker (
+    id SERIAL PRIMARY KEY,
+    folder_path VARCHAR(255),
+    from_date TIMESTAMP,
+    to_date TIMESTAMP,
+    start_time TIMESTAMP,
+    end_time TIMESTAMP,
+    status VARCHAR(50)
+);
+
+SELECT COUNT(*) AS total_files, SUM(CASE WHEN download_status = 'success' THEN 1 ELSE 0 END) AS downloaded_files,SUM(CASE WHEN download_status = 'failure' THEN 1 ELSE 0 END) AS failed_files FROM documents
