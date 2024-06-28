@@ -193,7 +193,7 @@ public class MyProcessor extends AbstractProcessor {
 					conn.setAutoCommit(false);
 
 					// Insert into migration_tracker table using CallableStatement
-					String insertTrackerSQL = "{ CALL INSERT INTO migration_tracker (csv_file_name, from_date, to_date, start_time, status) VALUES (?, ?, ?, ?, ?) RETURNING id INTO ? }";
+					String insertTrackerSQL = "BEGIN INSERT INTO migration_tracker (csv_file_name, from_date, to_date, start_time, status) VALUES (?, ?, ?, ?, ?) RETURNING id INTO ?; END;";
 					CallableStatement cstmt = conn.prepareCall(insertTrackerSQL);
 					cstmt.setString(1, csvFileName);
 					cstmt.setTimestamp(2, Timestamp.valueOf(startDateFilter.atStartOfDay()));
