@@ -190,7 +190,7 @@ public class MyProcessor extends AbstractProcessor {
 					conn = DriverManager.getConnection(context.getProperty(DATABASE_URL).getValue(),
 							context.getProperty(DATABASE_USER).getValue(),
 							context.getProperty(DATABASE_PASSWORD).getValue());
-					conn.setAutoCommit(false);
+					//conn.setAutoCommit(false);
 
 					// Insert into migration_tracker table using CallableStatement
 					String insertTrackerSQL = "BEGIN INSERT INTO migration_tracker (csv_file_name, from_date, to_date, start_time, status) VALUES (?, ?, ?, ?, ?) RETURNING id INTO ?; END;";
@@ -355,46 +355,52 @@ public class MyProcessor extends AbstractProcessor {
 	public void downloadDocumentByID(JavaPCX pcx, String path, String fileName, String revisionDocumentID,
 			int versionIndex, String downloadDir, String folderPath, final ProcessContext context,
 			int migrationTrackerId) {
-		String concatFileName, filePrefix, fileExtension, importDate;
 
-		pcx.DocumentGetRecInitByID(revisionDocumentID);
-		pcx.DocumentGetRecComplete();
-		importDate = pcx.DocumentGetRecGetAttr("import_date");
-		filePrefix = pcx.DocumentGetRecGetAttr("file_prefix");
-		fileExtension = pcx.DocumentGetRecGetAttr("file_extension");
-
-		DateTimeFormatter f = DateTimeFormatter.ofPattern("kk:mm:ss MMMM/dd/yyyy");
-		LocalDateTime formattedImportDateTime = LocalDateTime.parse(importDate, f);
-
-		concatFileName = versionIndex == 0 ? standardizeFileName(filePrefix + "." + fileExtension)
-				: standardizeFileName(filePrefix + "." + fileExtension + ".v" + versionIndex);
-
-		// Create folder if it doesn't exist
-		String fullFolderPath = Paths.get(downloadDir, folderPath).toString();
 		try {
-			Files.createDirectories(Paths.get(fullFolderPath));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		logger.info("Full folderpath: {}", fullFolderPath);
-		File file = new File(Paths.get(fullFolderPath, concatFileName).toString());
-		if (file.exists()) {
-			logger.info("File already exists - skipping download: {}", concatFileName);
-			logDownloadStatus(context, folderPath, fileName, versionIndex, "success", null, migrationTrackerId);
-		} else {
-			pcx.ReadFileInitByID(revisionDocumentID, file.getAbsolutePath());
-			pcx.ReadFileComplete();
+			String concatFileName, filePrefix, fileExtension, importDate;
 
-			if (!pcx.Error) {
-				logger.info("Read file complete: {}", concatFileName);
-				generateMetadataXMLFile(filePrefix + "." + fileExtension, path, formattedImportDateTime, fullFolderPath,
-						versionIndex);
+			pcx.DocumentGetRecInitByID(revisionDocumentID);
+			pcx.DocumentGetRecComplete();
+			importDate = pcx.DocumentGetRecGetAttr("import_date");
+			filePrefix = pcx.DocumentGetRecGetAttr("file_prefix");
+			fileExtension = pcx.DocumentGetRecGetAttr("file_extension");
+
+			DateTimeFormatter f = DateTimeFormatter.ofPattern("kk:mm:ss MMMM/dd/yyyy");
+			LocalDateTime formattedImportDateTime = LocalDateTime.parse(importDate, f);
+
+			concatFileName = versionIndex == 0 ? standardizeFileName(filePrefix + "." + fileExtension)
+					: standardizeFileName(filePrefix + "." + fileExtension + ".v" + versionIndex);
+
+			// Create folder if it doesn't exist
+			String fullFolderPath = Paths.get(downloadDir, folderPath).toString();
+
+			Files.createDirectories(Paths.get(fullFolderPath));
+
+			logger.info("Full folderpath: {}", fullFolderPath);
+			File file = new File(Paths.get(fullFolderPath, concatFileName).toString());
+			if (file.exists()) {
+				logger.info("File already exists - skipping download: {}", concatFileName);
 				logDownloadStatus(context, folderPath, fileName, versionIndex, "success", null, migrationTrackerId);
+				logger.info("Entry added in the Documents table");
 			} else {
-				logDownloadStatus(context, folderPath, fileName, versionIndex, "failure", pcx.ErrorDescription,
-						migrationTrackerId);
+				pcx.ReadFileInitByID(revisionDocumentID, file.getAbsolutePath());
+				pcx.ReadFileComplete();
+
+				if (!pcx.Error) {
+					logger.info("Read file complete: {}", concatFileName);
+					generateMetadataXMLFile(filePrefix + "." + fileExtension, path, formattedImportDateTime,
+							fullFolderPath, versionIndex);
+					logDownloadStatus(context, folderPath, fileName, versionIndex, "success", null, migrationTrackerId);
+					logger.info("Entry added in the Documents table");
+				} else {
+					logDownloadStatus(context, folderPath, fileName, versionIndex, "failure", pcx.ErrorDescription,
+							migrationTrackerId);
+				}
+				logger.info("Entry added in the Documents table");
 			}
+		} catch (Exception e) {
+			logger.error("Error downloading document by ID: {}", revisionDocumentID, e);
+			logDownloadStatus(context, folderPath, fileName, versionIndex, "failure", e.getMessage(),migrationTrackerId);
 		}
 
 	}
@@ -449,9 +455,10 @@ public class MyProcessor extends AbstractProcessor {
 				pstmt.setTimestamp(6, new Timestamp(new Date().getTime()));
 				pstmt.setInt(7, migrationTrackerId);
 				pstmt.executeUpdate();
+				logger.info("Entry added in the Documents table");
 			}
 		} catch (SQLException e) {
-			logger.error("Error logging download status", e);
+			logger.info("Failed to add entry in the Documents Table" + e.getMessage());
 		}
 	}
 
