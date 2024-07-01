@@ -225,11 +225,13 @@ public class MyProcessor extends AbstractProcessor {
 
 					// Commit transaction
 					conn.commit();
+                    logger.info("Migration completed successfully for FlowFile: {}", csvFileName);
 				} catch (Exception e) {
 					logger.error("Error processing FlowFile", e);
 					if (conn != null) {
 						try {
 							conn.rollback();
+                            logger.info("Transaction rolled back due to error");
 						} catch (SQLException rollbackException) {
 							logger.error("Error rolling back transaction", rollbackException);
 						}
@@ -260,6 +262,7 @@ public class MyProcessor extends AbstractProcessor {
 		});
 
 		session.transfer(flowFile, SUCCESS);
+        logger.info("FlowFile transferred to SUCCESS relationship");
 	}
 
 	public List<String> getDocuments(JavaPCX pcx, String path) {
@@ -341,7 +344,7 @@ public class MyProcessor extends AbstractProcessor {
 
 		if (docRevisionList != null && docRevisionList.size() > 0) {
 
-			for (int i = 1; i < docRevisionList.size(); i++) {
+			for (int i = 1; i <= docRevisionList.size(); i++) {
 				String oneRevisionDocumentID = docRevisionList.get(i);
 				int versionIndex = docRevisionList.size() - i;
 				downloadDocumentByID(pcx, "/" + path + "/", fileName, oneRevisionDocumentID, versionIndex, downloadDir,
@@ -391,12 +394,10 @@ public class MyProcessor extends AbstractProcessor {
 					generateMetadataXMLFile(filePrefix + "." + fileExtension, path, formattedImportDateTime,
 							fullFolderPath, versionIndex);
 					logDownloadStatus(context, folderPath, fileName, versionIndex, "success", null, migrationTrackerId);
-					logger.info("Entry added in the Documents table");
 				} else {
 					logDownloadStatus(context, folderPath, fileName, versionIndex, "failure", pcx.ErrorDescription,
 							migrationTrackerId);
-				}
-				logger.info("Entry added in the Documents table");
+				}		
 			}
 		} catch (Exception e) {
 			logger.error("Error downloading document by ID: {}", revisionDocumentID, e);
@@ -482,6 +483,7 @@ public class MyProcessor extends AbstractProcessor {
 						reportPstmt.setInt(3, failedFiles);
 						reportPstmt.setTimestamp(4, new Timestamp(new Date().getTime()));
 						reportPstmt.executeUpdate();
+                        logger.info("Reconciliation report generated successfully");
 					}
 				}
 			}
