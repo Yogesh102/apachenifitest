@@ -190,7 +190,7 @@ public class MyProcessor extends AbstractProcessor {
 					conn = DriverManager.getConnection(context.getProperty(DATABASE_URL).getValue(),
 							context.getProperty(DATABASE_USER).getValue(),
 							context.getProperty(DATABASE_PASSWORD).getValue());
-					//conn.setAutoCommit(false);
+					// conn.setAutoCommit(false);
 
 					// Insert into migration_tracker table using CallableStatement
 					String insertTrackerSQL = "BEGIN INSERT INTO migration_tracker (csv_file_name, from_date, to_date, start_time, status) VALUES (?, ?, ?, ?, ?) RETURNING id INTO ?; END;";
@@ -225,13 +225,13 @@ public class MyProcessor extends AbstractProcessor {
 
 					// Commit transaction
 					conn.commit();
-                    logger.info("Migration completed successfully for FlowFile: {}", csvFileName);
+					logger.info("Migration completed successfully for FlowFile: {}", csvFileName);
 				} catch (Exception e) {
 					logger.error("Error processing FlowFile", e);
 					if (conn != null) {
 						try {
 							conn.rollback();
-                            logger.info("Transaction rolled back due to error");
+							logger.info("Transaction rolled back due to error");
 						} catch (SQLException rollbackException) {
 							logger.error("Error rolling back transaction", rollbackException);
 						}
@@ -262,7 +262,7 @@ public class MyProcessor extends AbstractProcessor {
 		});
 
 		session.transfer(flowFile, SUCCESS);
-        logger.info("FlowFile transferred to SUCCESS relationship");
+		logger.info("FlowFile transferred to SUCCESS relationship");
 	}
 
 	public List<String> getDocuments(JavaPCX pcx, String path) {
@@ -344,11 +344,14 @@ public class MyProcessor extends AbstractProcessor {
 
 		if (docRevisionList != null && docRevisionList.size() > 0) {
 
+			logger.info("Total Document Revisions to Process: {}", docRevisionList.size());
 			for (int i = 1; i <= docRevisionList.size(); i++) {
-				String oneRevisionDocumentID = docRevisionList.get(i);
+
+				String oneRevisionDocumentID = docRevisionList.get(i - 1);
 				int versionIndex = docRevisionList.size() - i;
 				downloadDocumentByID(pcx, "/" + path + "/", fileName, oneRevisionDocumentID, versionIndex, downloadDir,
 						path, context, migrationTrackerId);
+
 			}
 		}
 
@@ -397,11 +400,12 @@ public class MyProcessor extends AbstractProcessor {
 				} else {
 					logDownloadStatus(context, folderPath, fileName, versionIndex, "failure", pcx.ErrorDescription,
 							migrationTrackerId);
-				}		
+				}
 			}
 		} catch (Exception e) {
 			logger.error("Error downloading document by ID: {}", revisionDocumentID, e);
-			logDownloadStatus(context, folderPath, fileName, versionIndex, "failure", e.getMessage(),migrationTrackerId);
+			logDownloadStatus(context, folderPath, fileName, versionIndex, "failure", e.getMessage(),
+					migrationTrackerId);
 		}
 
 	}
@@ -483,7 +487,7 @@ public class MyProcessor extends AbstractProcessor {
 						reportPstmt.setInt(3, failedFiles);
 						reportPstmt.setTimestamp(4, new Timestamp(new Date().getTime()));
 						reportPstmt.executeUpdate();
-                        logger.info("Reconciliation report generated successfully");
+						logger.info("Reconciliation report generated successfully");
 					}
 				}
 			}
