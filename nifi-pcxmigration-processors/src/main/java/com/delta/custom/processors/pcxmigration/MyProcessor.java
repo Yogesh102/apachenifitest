@@ -343,9 +343,14 @@ public class MyProcessor extends AbstractProcessor {
 		}
 
 		if (docRevisionList != null && docRevisionList.size() > 0) {
-
+			
 			logger.info("Total Document Revisions to Process: {}", docRevisionList.size());
-			for (int i = 1; i <= docRevisionList.size(); i++) {
+			
+			//Download the current revision
+			downloadDocumentByID(pcx, "/" + path + "/", fileName, docRevisionList.get(0), 0, downloadDir, path, context,
+					migrationTrackerId);
+			
+			for (int i = 2; i <= docRevisionList.size(); i++) {
 
 				String oneRevisionDocumentID = docRevisionList.get(i - 1);
 				int versionIndex = docRevisionList.size() - i;
