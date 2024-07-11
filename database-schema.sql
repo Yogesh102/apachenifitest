@@ -23,3 +23,11 @@ CREATE TABLE migration_tracker (
 ALTER TABLE documents ADD CONSTRAINT fk_migration_tracker
 FOREIGN KEY (migration_tracker_id)
 REFERENCES migration_tracker(id);
+
+
+SELECT 
+    SUM(EXTRACT(HOUR FROM (end_time - start_time)) * 60 * 60 +
+        EXTRACT(MINUTE FROM (end_time - start_time)) * 60 +
+        EXTRACT(SECOND FROM (end_time - start_time))) / 3600 AS total_hours
+FROM documents
+WHERE end_time IS NOT NULL AND start_time IS NOT NULL;
