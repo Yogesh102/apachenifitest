@@ -1,4 +1,6 @@
 com\delta\custom\processors\pcxmigration\MyProcessor$1.class
 com\delta\custom\processors\pcxmigration\DuplicateFinder.class
+com\delta\custom\processors\pcxmigration\RetryFailedDocumentsProcessor.class
 com\delta\custom\processors\pcxmigration\MyProcessor$2.class
+com\delta\custom\processors\pcxmigration\RetryFailedDocumentsProcessor$DocumentRecord.class
 com\delta\custom\processors\pcxmigration\MyProcessor.class

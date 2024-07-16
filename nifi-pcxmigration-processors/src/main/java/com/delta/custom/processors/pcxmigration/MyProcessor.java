@@ -391,7 +391,8 @@ public class MyProcessor extends AbstractProcessor {
 			File file = new File(Paths.get(fullFolderPath, concatFileName).toString());
 			if (file.exists()) {
 				logger.info("File already exists - skipping download: {}", concatFileName);
-				logDownloadStatus(context, folderPath, fileName, versionIndex, "success", null, migrationTrackerId);
+				logDownloadStatus(context, folderPath, fileName, versionIndex, revisionDocumentID, "success", null,
+						migrationTrackerId);
 				logger.info("Entry added in the Documents table");
 			} else {
 				pcx.ReadFileInitByID(revisionDocumentID, file.getAbsolutePath());
@@ -401,16 +402,17 @@ public class MyProcessor extends AbstractProcessor {
 					logger.info("Read file complete: {}", concatFileName);
 					generateMetadataXMLFile(filePrefix + "." + fileExtension, path, formattedImportDateTime,
 							fullFolderPath, versionIndex);
-					logDownloadStatus(context, folderPath, fileName, versionIndex, "success", null, migrationTrackerId);
-				} else {
-					logDownloadStatus(context, folderPath, fileName, versionIndex, "failure", pcx.ErrorDescription,
+					logDownloadStatus(context, folderPath, fileName, versionIndex, revisionDocumentID, "success", null,
 							migrationTrackerId);
+				} else {
+					logDownloadStatus(context, folderPath, fileName, versionIndex, revisionDocumentID, "failure",
+							pcx.ErrorDescription, migrationTrackerId);
 				}
 			}
 		} catch (Exception e) {
 			logger.error("Error downloading document by ID: {}", revisionDocumentID, e);
-			logDownloadStatus(context, folderPath, fileName, versionIndex, "failure", e.getMessage(),
-					migrationTrackerId);
+			logDownloadStatus(context, folderPath, fileName, versionIndex, revisionDocumentID, "failure",
+					e.getMessage(), migrationTrackerId);
 		}
 
 	}
@@ -452,7 +454,7 @@ public class MyProcessor extends AbstractProcessor {
 	}
 
 	public void logDownloadStatus(final ProcessContext context, String folderPath, String fileName, int version,
-			String status, String errorMessage, int migrationTrackerId) {
+			String revisionDocumentID, String status, String errorMessage, int migrationTrackerId) {
 		try (Connection conn = DriverManager.getConnection(context.getProperty(DATABASE_URL).getValue(),
 				context.getProperty(DATABASE_USER).getValue(), context.getProperty(DATABASE_PASSWORD).getValue())) {
 			String sql = "INSERT INTO documents (folder_path, file_name, version, download_status, error_message, timestamp, migration_tracker_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
