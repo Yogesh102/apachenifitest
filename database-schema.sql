@@ -24,6 +24,10 @@ ALTER TABLE documents ADD CONSTRAINT fk_migration_tracker
 FOREIGN KEY (migration_tracker_id)
 REFERENCES migration_tracker(id);
 
+ALTER TABLE documents
+ADD versionId VARCHAR2(50) NOT NULL;
+
+
 SELECT 
     SUM(EXTRACT(SECOND FROM (end_time - start_time)) +
         60 * EXTRACT(MINUTE FROM (end_time - start_time)) +
