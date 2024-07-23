@@ -401,7 +401,7 @@ public class MyProcessor extends AbstractProcessor {
 				if (!pcx.Error) {
 					logger.info("Read file complete: {}", concatFileName);
 					generateMetadataXMLFile(filePrefix + "." + fileExtension, path, formattedImportDateTime,
-							fullFolderPath, versionIndex,revisionDocumentID);
+							fullFolderPath, versionIndex, revisionDocumentID);
 					logDownloadStatus(context, folderPath, fileName, versionIndex, revisionDocumentID, "success", null,
 							migrationTrackerId);
 				} else {
@@ -458,7 +458,7 @@ public class MyProcessor extends AbstractProcessor {
 			String revisionDocumentID, String status, String errorMessage, int migrationTrackerId) {
 		try (Connection conn = DriverManager.getConnection(context.getProperty(DATABASE_URL).getValue(),
 				context.getProperty(DATABASE_USER).getValue(), context.getProperty(DATABASE_PASSWORD).getValue())) {
-			String sql = "INSERT INTO documents (folder_path, file_name, version, download_status, error_message, timestamp, migration_tracker_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
+			String sql = "INSERT INTO documents (folder_path, file_name, version, download_status, error_message, timestamp, migration_tracker_id,versionId) VALUES (?, ?, ?, ?, ?, ?, ?,?)";
 			try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 				pstmt.setString(1, folderPath);
 				pstmt.setString(2, fileName);
@@ -467,6 +467,7 @@ public class MyProcessor extends AbstractProcessor {
 				pstmt.setString(5, errorMessage);
 				pstmt.setTimestamp(6, new Timestamp(new Date().getTime()));
 				pstmt.setInt(7, migrationTrackerId);
+				pstmt.setString(8, revisionDocumentID);
 				pstmt.executeUpdate();
 				logger.info("Entry added in the Documents table");
 			}
