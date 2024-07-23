@@ -401,7 +401,7 @@ public class MyProcessor extends AbstractProcessor {
 				if (!pcx.Error) {
 					logger.info("Read file complete: {}", concatFileName);
 					generateMetadataXMLFile(filePrefix + "." + fileExtension, path, formattedImportDateTime,
-							fullFolderPath, versionIndex);
+							fullFolderPath, versionIndex,revisionDocumentID);
 					logDownloadStatus(context, folderPath, fileName, versionIndex, revisionDocumentID, "success", null,
 							migrationTrackerId);
 				} else {
@@ -424,7 +424,7 @@ public class MyProcessor extends AbstractProcessor {
 	}
 
 	public void generateMetadataXMLFile(String fileName, String folderPath, LocalDateTime importDate,
-			String fullFolderPath, int versionIndex) {
+			String fullFolderPath, int versionIndex, String revisionId) {
 		try (BufferedWriter xmlWriter = new BufferedWriter(new FileWriter(Paths.get(fullFolderPath, fileName
 				+ (versionIndex == 0 ? ".metadata.properties.xml" : ".metadata.properties.xml.v" + versionIndex))
 				.toString()))) {
@@ -435,6 +435,7 @@ public class MyProcessor extends AbstractProcessor {
 			// xmlWriter.write(" <entry key=\"cm:description\">" + folderPath +
 			// "</entry>\n");
 			xmlWriter.write("  <entry key=\"cm:author\">" + "hmadmin" + "</entry>\n");
+			xmlWriter.write("  <entry key=\"dars:pcxId\">" + revisionId + "</entry>\n");
 			xmlWriter.write("  <entry key=\"cm:created\">" + importDate.toString() + "</entry>\n");
 			xmlWriter.write("</properties>\n");
 		} catch (IOException e) {
