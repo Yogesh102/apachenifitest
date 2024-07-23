@@ -5,7 +5,9 @@ CREATE TABLE documents (
     version NUMBER,
     download_status VARCHAR2(50),
     error_message CLOB,
-    timestamp TIMESTAMP
+    timestamp TIMESTAMP,
+    migration_tracker_id NUMBER,
+    versionId VARCHAR(50)
 );
 
 ALTER TABLE documents ADD migration_tracker_id NUMBER;
