@@ -391,9 +391,8 @@ public class MyProcessor extends AbstractProcessor {
 			File file = new File(Paths.get(fullFolderPath, concatFileName).toString());
 			if (file.exists()) {
 				logger.info("File already exists - skipping download: {}", concatFileName);
-				logDownloadStatus(context, folderPath, fileName, versionIndex, revisionDocumentID, "success", null,
-						migrationTrackerId);
-				logger.info("Entry added in the Documents table");
+				//logDownloadStatus(context, folderPath, fileName, versionIndex, revisionDocumentID, "success", null,migrationTrackerId);
+				//logger.info("Entry added in the Documents table");
 			} else {
 				pcx.ReadFileInitByID(revisionDocumentID, file.getAbsolutePath());
 				pcx.ReadFileComplete();

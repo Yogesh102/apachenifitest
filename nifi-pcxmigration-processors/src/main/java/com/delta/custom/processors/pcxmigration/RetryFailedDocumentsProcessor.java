@@ -200,11 +200,11 @@ public class RetryFailedDocumentsProcessor extends AbstractProcessor {
 			if (!pcx.Error) {
 				logger.info("Read file complete: {}", concatFileName);
 				generateMetadataXMLFile(filePrefix + "." + fileExtension, path, formattedImportDateTime, fullFolderPath,
-						versionIndex,revisionDocumentID);
+						versionIndex, revisionDocumentID);
 
 				updateDownloadStatus(conn, record.id, "success", null);
 			} else {
-				throw new Exception(pcx.ErrorDescription);
+				updateDownloadStatus(conn, record.id, "error", pcx.ErrorDescription);
 			}
 		}
 	}
@@ -227,7 +227,7 @@ public class RetryFailedDocumentsProcessor extends AbstractProcessor {
 	}
 
 	private void generateMetadataXMLFile(String fileName, String folderPath, LocalDateTime importDate,
-			String fullFolderPath, int versionIndex , String revisionId) {
+			String fullFolderPath, int versionIndex, String revisionId) {
 		try (BufferedWriter xmlWriter = new BufferedWriter(new FileWriter(Paths.get(fullFolderPath, fileName
 				+ (versionIndex == 0 ? ".metadata.properties.xml" : ".metadata.properties.xml.v" + versionIndex))
 				.toString()))) {
