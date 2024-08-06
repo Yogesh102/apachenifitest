@@ -139,7 +139,7 @@ public class RetryFailedDocumentsProcessor extends AbstractProcessor {
 	}
 
 	private List<DocumentRecord> fetchFailedRecords(Connection conn) throws SQLException {
-		String sql = "SELECT id, folder_path, file_name, version, revision_document_id FROM documents WHERE download_status = 'failure'";
+		String sql = "SELECT id, folder_path, file_name, version, versionId FROM documents WHERE download_status = 'failure'";
 		try (PreparedStatement pstmt = conn.prepareStatement(sql); ResultSet rs = pstmt.executeQuery()) {
 
 			List<DocumentRecord> records = new ArrayList<>();
@@ -200,7 +200,7 @@ public class RetryFailedDocumentsProcessor extends AbstractProcessor {
 			if (!pcx.Error) {
 				logger.info("Read file complete: {}", concatFileName);
 				generateMetadataXMLFile(filePrefix + "." + fileExtension, path, formattedImportDateTime, fullFolderPath,
-						versionIndex);
+						versionIndex,revisionDocumentID);
 
 				updateDownloadStatus(conn, record.id, "success", null);
 			} else {
@@ -227,7 +227,7 @@ public class RetryFailedDocumentsProcessor extends AbstractProcessor {
 	}
 
 	private void generateMetadataXMLFile(String fileName, String folderPath, LocalDateTime importDate,
-			String fullFolderPath, int versionIndex) {
+			String fullFolderPath, int versionIndex , String revisionId) {
 		try (BufferedWriter xmlWriter = new BufferedWriter(new FileWriter(Paths.get(fullFolderPath, fileName
 				+ (versionIndex == 0 ? ".metadata.properties.xml" : ".metadata.properties.xml.v" + versionIndex))
 				.toString()))) {
@@ -236,6 +236,7 @@ public class RetryFailedDocumentsProcessor extends AbstractProcessor {
 			xmlWriter.write("<properties>\n");
 			xmlWriter.write("  <entry key=\"cm:name\">" + fileName + "</entry>\n");
 			xmlWriter.write("  <entry key=\"cm:author\">" + "hmadmin" + "</entry>\n");
+			xmlWriter.write("  <entry key=\"dars:pcxId\">" + revisionId + "</entry>\n");
 			xmlWriter.write("  <entry key=\"cm:created\">" + importDate.toString() + "</entry>\n");
 			xmlWriter.write("</properties>\n");
 			logger.info("Metadata XML file generated for: {}", fileName);
