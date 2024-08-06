@@ -204,7 +204,7 @@ public class RetryFailedDocumentsProcessor extends AbstractProcessor {
 
 				updateDownloadStatus(conn, record.id, "success", null);
 			} else {
-				updateDownloadStatus(conn, record.id, "error", pcx.ErrorDescription);
+				updateDownloadStatus(conn, record.id, "failure", pcx.ErrorDescription);
 			}
 		}
 	}
