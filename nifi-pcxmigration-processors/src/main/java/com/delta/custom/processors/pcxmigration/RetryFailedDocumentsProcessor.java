@@ -123,7 +123,9 @@ public class RetryFailedDocumentsProcessor extends AbstractProcessor {
 					context.getProperty(USERNAME).getValue(), context.getProperty(PASSWORD).getValue());
 
 			for (DocumentRecord record : failedRecords) {
+				logger.info(" Processing failed record with id " + record.id + " name :" + record.fileName);
 				downloadDocumentByID(conn, pcx, record, context);
+				logger.info(" Completed failed record with id " + record.id + " name :" + record.fileName);
 			}
 		} catch (SQLException e) {
 			logger.error("Database error during processing", e);
@@ -147,6 +149,8 @@ public class RetryFailedDocumentsProcessor extends AbstractProcessor {
 				records.add(new DocumentRecord(rs.getInt("id"), rs.getString("folder_path"), rs.getString("file_name"),
 						rs.getInt("version"), rs.getString("versionId")));
 			}
+			
+			logger.info("Total Failed Records : " + records.size() );
 			return records;
 		}
 	}
