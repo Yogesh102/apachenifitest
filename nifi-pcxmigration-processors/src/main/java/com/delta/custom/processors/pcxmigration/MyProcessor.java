@@ -430,12 +430,14 @@ public class MyProcessor extends AbstractProcessor {
 			xmlWriter.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 			xmlWriter.write("<!DOCTYPE properties SYSTEM \"http://java.sun.com/dtd/properties.dtd\">\n");
 			xmlWriter.write("<properties>\n");
+			xmlWriter.write("  <entry key=\"type\">dars:doc</entry>\n");
 			xmlWriter.write("  <entry key=\"cm:name\">" + fileName + "</entry>\n");
 			// xmlWriter.write(" <entry key=\"cm:description\">" + folderPath +
 			// "</entry>\n");
 			xmlWriter.write("  <entry key=\"cm:author\">" + "hmadmin" + "</entry>\n");
 			xmlWriter.write("  <entry key=\"dars:pcxId\">" + revisionId + "</entry>\n");
 			xmlWriter.write("  <entry key=\"cm:created\">" + importDate.toString() + "</entry>\n");
+			xmlWriter.write("  <entry key=\"dars:versionCreated\">" + importDate.toString() + "</entry>\n");
 			xmlWriter.write("</properties>\n");
 		} catch (IOException e) {
 			logger.error("Error generating metadata XML file for: {}", fileName, e);
