@@ -431,6 +431,8 @@ public class MyProcessor extends AbstractProcessor {
 			xmlWriter.write("<!DOCTYPE properties SYSTEM \"http://java.sun.com/dtd/properties.dtd\">\n");
 			xmlWriter.write("<properties>\n");
 			xmlWriter.write("  <entry key=\"type\">dars:doc</entry>\n");
+			xmlWriter.write("  <entry key=\"aspects\">cm:versionable,cm:storeSelector</entry>\n");
+			xmlWriter.write("  <entry key=\"cm:storeName\">dars</entry>\n");
 			xmlWriter.write("  <entry key=\"cm:name\">" + fileName + "</entry>\n");
 			// xmlWriter.write(" <entry key=\"cm:description\">" + folderPath +
 			// "</entry>\n");

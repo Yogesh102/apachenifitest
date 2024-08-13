@@ -240,6 +240,8 @@ public class RetryFailedDocumentsProcessor extends AbstractProcessor {
 			xmlWriter.write("<!DOCTYPE properties SYSTEM \"http://java.sun.com/dtd/properties.dtd\">\n");
 			xmlWriter.write("<properties>\n");
 			xmlWriter.write("  <entry key=\"type\">dars:doc</entry>\n");
+			xmlWriter.write("  <entry key=\"aspects\">cm:versionable,cm:storeSelector</entry>\n");
+			xmlWriter.write("  <entry key=\"cm:storeName\">dars</entry>\n");
 			xmlWriter.write("  <entry key=\"cm:name\">" + fileName + "</entry>\n");
 			xmlWriter.write("  <entry key=\"cm:author\">" + "hmadmin" + "</entry>\n");
 			xmlWriter.write("  <entry key=\"dars:pcxId\">" + revisionId + "</entry>\n");
