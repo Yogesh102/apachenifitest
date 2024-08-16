@@ -149,8 +149,8 @@ public class RetryFailedDocumentsProcessor extends AbstractProcessor {
 				records.add(new DocumentRecord(rs.getInt("id"), rs.getString("folder_path"), rs.getString("file_name"),
 						rs.getInt("version"), rs.getString("versionId")));
 			}
-			
-			logger.info("Total Failed Records : " + records.size() );
+
+			logger.info("Total Failed Records : " + records.size());
 			return records;
 		}
 	}
@@ -204,8 +204,8 @@ public class RetryFailedDocumentsProcessor extends AbstractProcessor {
 
 			if (!pcx.Error) {
 				logger.info("Read file complete: {}", concatFileName);
-				generateMetadataXMLFile(filePrefix + "." + fileExtension, path, formattedImportDateTime, fullFolderPath,
-						versionIndex, revisionDocumentID);
+				generateMetadataXMLFile(standardizeFileName(filePrefix + "." + fileExtension), path,
+						formattedImportDateTime, fullFolderPath, versionIndex, revisionDocumentID);
 
 				updateDownloadStatus(conn, record.id, "success", null);
 			} else {
@@ -226,7 +226,9 @@ public class RetryFailedDocumentsProcessor extends AbstractProcessor {
 	}
 
 	/**
-	 * filename will be trimmed with space at the end , multiple spaces in the mid and & will be replaced by &amp;
+	 * filename will be trimmed with space at the end , multiple spaces in the mid
+	 * and & will be replaced by &amp;
+	 * 
 	 * @param fileName
 	 * @return
 	 */

@@ -399,7 +399,7 @@ public class MyProcessor extends AbstractProcessor {
 
 				if (!pcx.Error) {
 					logger.info("Read file complete: {}", concatFileName);
-					generateMetadataXMLFile(filePrefix + "." + fileExtension, path, formattedImportDateTime,
+					generateMetadataXMLFile(standardizeFileName(filePrefix + "." + fileExtension), path, formattedImportDateTime,
 							fullFolderPath, versionIndex, revisionDocumentID);
 					logDownloadStatus(context, folderPath, fileName, versionIndex, revisionDocumentID, "success", null,
 							migrationTrackerId);
