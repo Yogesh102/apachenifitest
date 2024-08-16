@@ -225,9 +225,15 @@ public class RetryFailedDocumentsProcessor extends AbstractProcessor {
 		}
 	}
 
+	/**
+	 * filename will be trimmed with space at the end , multiple spaces in the mid and & will be replaced by &amp;
+	 * @param fileName
+	 * @return
+	 */
 	private String standardizeFileName(String fileName) {
 		String trimmed = fileName.replaceAll("\\s+$", "");
 		trimmed = trimmed.replaceAll("\\s+", " ");
+		trimmed = trimmed.replaceAll("&", "&amp;");
 		return trimmed;
 	}
 
