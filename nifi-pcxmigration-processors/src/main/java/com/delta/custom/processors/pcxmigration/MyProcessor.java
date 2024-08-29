@@ -379,11 +379,12 @@ public class MyProcessor extends AbstractProcessor {
 			DateTimeFormatter f = DateTimeFormatter.ofPattern("kk:mm:ss MMMM/dd/yyyy");
 			LocalDateTime formattedImportDateTime = LocalDateTime.parse(importDate, f);
 
-			concatFileName = versionIndex == 0 ? standardizeFileName(filePrefix + "." + fileExtension)
-					: standardizeFileName(filePrefix + "." + fileExtension + ".v" + versionIndex);
+			concatFileName = versionIndex == 0 ? standardizeFileName(filePrefix + "." + fileExtension, false)
+					: standardizeFileName(filePrefix + "." + fileExtension + ".v" + versionIndex, false);
 
 			// Create folder if it doesn't exist
 			String fullFolderPath = Paths.get(downloadDir, folderPath).toString();
+			fullFolderPath = this.standardizeFileName(fullFolderPath, true);
 
 			Files.createDirectories(Paths.get(fullFolderPath));
 
@@ -391,16 +392,17 @@ public class MyProcessor extends AbstractProcessor {
 			File file = new File(Paths.get(fullFolderPath, concatFileName).toString());
 			if (file.exists()) {
 				logger.info("File already exists - skipping download: {}", concatFileName);
-				//logDownloadStatus(context, folderPath, fileName, versionIndex, revisionDocumentID, "success", null,migrationTrackerId);
-				//logger.info("Entry added in the Documents table");
+				// logDownloadStatus(context, folderPath, fileName, versionIndex,
+				// revisionDocumentID, "success", null,migrationTrackerId);
+				// logger.info("Entry added in the Documents table");
 			} else {
 				pcx.ReadFileInitByID(revisionDocumentID, file.getAbsolutePath());
 				pcx.ReadFileComplete();
 
 				if (!pcx.Error) {
 					logger.info("Read file complete: {}", concatFileName);
-					generateMetadataXMLFile(standardizeFileName(filePrefix + "." + fileExtension), path, formattedImportDateTime,
-							fullFolderPath, versionIndex, revisionDocumentID);
+					generateMetadataXMLFile(standardizeFileName(filePrefix + "." + fileExtension, false), path,
+							formattedImportDateTime, fullFolderPath, versionIndex, revisionDocumentID);
 					logDownloadStatus(context, folderPath, fileName, versionIndex, revisionDocumentID, "success", null,
 							migrationTrackerId);
 				} else {
@@ -417,14 +419,18 @@ public class MyProcessor extends AbstractProcessor {
 	}
 
 	/**
-	 * filename will be trimmed with space at the end , multiple spaces in the mid and & will be replaced by &amp;
+	 * filename will be trimmed with space at the end , multiple spaces in the mid
+	 * and & will be replaced by &amp;
+	 * 
 	 * @param fileName
 	 * @return
 	 */
-	private String standardizeFileName(String fileName) {
+	private String standardizeFileName(String fileName, boolean isFolder) {
 		String trimmed = fileName.replaceAll("\\s+$", "");
 		trimmed = trimmed.replaceAll("\\s+", " ");
-		trimmed = trimmed.replaceAll("&", "&amp;");
+		if (isFolder == false) {
+			trimmed = trimmed.replaceAll("&", "&amp;");
+		}
 		return trimmed;
 	}
 
