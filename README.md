@@ -13,3 +13,12 @@ awk -F',' '{for(i=1; i<=NF; i++) $i="\"" $i "\""}1' OFS=',' input.csv > output.c
 for file in *"(Change only).zip"; do
     mv "$file" "$(echo "$file" | sed 's/Change/change/')";
 done
+
+
+header=$(head -n 1 Finance1.csv)
+
+tail -n +2 Finance1.csv | split -l $((($(wc -l < Finance1.csv)-1)/10)) - Finance_part_
+for file in Finance_part_*; do
+    sed -i "1i$header" "$file"
+done
+
