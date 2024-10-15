@@ -10,3 +10,6 @@ find /path/to/directory -type f -name "*.csv" -exec grep -n -H -P '(?<!"),(?!")'
 awk -F',' '{for(i=1; i<=NF; i++) $i="\"" $i "\""}1' OFS=',' input.csv > output.csv
 
 
+for file in *"(Change only).zip"; do
+    mv "$file" "$(echo "$file" | sed 's/Change/change/')";
+done
