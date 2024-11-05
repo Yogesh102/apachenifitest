@@ -14,3 +14,4 @@
 # limitations under the License.
 com.delta.custom.processors.pcxmigration.MyProcessor
 com.delta.custom.processors.pcxmigration.RetryFailedDocumentsProcessor
+com.delta.custom.processors.pcxmigration.MembershipProcessor
