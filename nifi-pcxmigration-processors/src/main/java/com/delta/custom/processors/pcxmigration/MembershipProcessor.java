@@ -84,10 +84,9 @@ public class MembershipProcessor extends AbstractProcessor {
 	public static final PropertyDescriptor END_DATE = new PropertyDescriptor.Builder().name("END_DATE")
 			.displayName("ENDDATE").description("End date").required(true)
 			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
-	
-	public static final PropertyDescriptor PATH = new PropertyDescriptor.Builder().name("PATH")
-			.displayName("PATH").description("Folder Path").required(true)
-			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
+
+	public static final PropertyDescriptor PATH = new PropertyDescriptor.Builder().name("PATH").displayName("PATH")
+			.description("Folder Path").required(true).addValidator(StandardValidators.NON_EMPTY_VALIDATOR).build();
 
 	public static final PropertyDescriptor PASSWORD = new PropertyDescriptor.Builder().name("PCX_PASSWORD")
 			.displayName("Password").description("PCX Password").required(true)
@@ -186,6 +185,7 @@ public class MembershipProcessor extends AbstractProcessor {
 					String start_date = context.getProperty(START_DATE).getValue();
 					String end_date = context.getProperty(END_DATE).getValue();
 					String path = context.getProperty(PATH).getValue();
+					logger.info("path vaue " + path);
 					LocalDate startDateFilter = StringUtils.isBlank(start_date) ? null : convertDate(start_date);
 					LocalDate endDateFilter = convertDate(end_date);
 
@@ -212,7 +212,7 @@ public class MembershipProcessor extends AbstractProcessor {
 
 					for (CSVRecord record : records) {
 						String fileName = record.get("folderpath");
-						logger.info("Processing Record: {}", fileName);
+						logger.info("Processing Record: {}", fileName + " path value = " + path);
 						getRevisionDocumentIDs(pcx, "/" + path + "/", fileName, startDateFilter, endDateFilter,
 								downloadDir, context, migrationTrackerId);
 
@@ -302,8 +302,11 @@ public class MembershipProcessor extends AbstractProcessor {
 		String previousImportDate = "";
 		List<String> docRevisionList = new ArrayList<>();
 
+		logger.info("Getting document revisions");
 		while (more) {
 			more = false;
+			
+			logger.info("Document rev list init path " + path+ fileName);
 			pcx.DocumentRevListInitByPath(path + fileName);
 			pcx.DocumentRevListSetAttr("array_max", "100");
 
