@@ -16,26 +16,6 @@ for folder in "${!FOLDERS[@]}"; do
     mkdir -p "$DEST_DIR/$folder"
 done
 
-# Function to move main file and its associated files
-move_files_with_associates() {
-    local file=$1
-    local folder=$2
-    local base_name=$(basename "$file")
-    local file_name="${base_name%.*}"  # Remove the main file extension
-
-    # Move the main file
-    mv "$file" "$DEST_DIR/$folder/"
-    echo "Moved $base_name to $folder"
-
-    # Move associated files
-    for associate in "$SOURCE_DIR/${file_name}.metadata.properties.xml"*; do
-        if [ -f "$associate" ]; then
-            mv "$associate" "$DEST_DIR/$folder/"
-            echo "Moved $(basename "$associate") to $folder"
-        fi
-    done
-}
-
 # Process files in the source directory
 for file in "$SOURCE_DIR"/*; do
     if [ -f "$file" ]; then
@@ -44,7 +24,9 @@ for file in "$SOURCE_DIR"/*; do
         for folder in "${!FOLDERS[@]}"; do
             for pattern in ${FOLDERS[$folder]}; do
                 if [[ "$FILE_NAME" == $pattern* ]]; then
-                    move_files_with_associates "$file" "$folder"
+                    # Move the main file
+                    mv "$file" "$DEST_DIR/$folder/"
+                    echo "Moved $FILE_NAME to $folder"
                     moved=true
                     break
                 fi
