@@ -68,7 +68,7 @@ echo "Listing Level 1 directories in $BASE_DIR:"
 find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d
 echo "------------------------------------------"
 
-# Loop through all level 1 directories
+# Loop through all Level 1 directories
 for level1_dir in "$BASE_DIR"/*; do
     if [ -d "$level1_dir" ]; then
         echo "Processing Level 1 directory: $level1_dir"
@@ -78,25 +78,16 @@ for level1_dir in "$BASE_DIR"/*; do
         find "$level1_dir" -mindepth 1 -maxdepth 1 -type d
         echo "  ------------------------------------------"
 
-        # Loop through all level 2 directories
+        # Loop through all Level 2 directories
         for level2_dir in "$level1_dir"/*; do
             if [ -d "$level2_dir" ]; then
                 echo "  Processing Level 2 directory: $level2_dir"
 
-                # List Level 3 directories inside the current Level 2 directory
-                echo "    Listing Level 3 directories in $level2_dir:"
-                find "$level2_dir" -mindepth 1 -maxdepth 1 -type d
-                echo "    ------------------------------------------"
+                # Move all files from Level 2 to Level 1
+                echo "    Moving files from Level 2 ($level2_dir) to Level 1 ($level1_dir)..."
+                find "$level2_dir" -type f -exec mv -v {} "$level1_dir/" \;
 
-                # Find and move all files from level 3 to level 2
-                echo "    Moving files from Level 3 to Level 2..."
-                find "$level2_dir" -mindepth 2 -type f -exec mv -v {} "$level2_dir/" \;
-
-                # Find and delete all empty Level 3 directories
-                echo "    Deleting empty Level 3 directories..."
-                find "$level2_dir" -mindepth 1 -type d -empty -print -delete
-
-                # Check if the level 2 directory is empty after the cleanup
+                # Check if Level 2 directory is empty and delete it
                 if [ -z "$(ls -A "$level2_dir")" ]; then
                     echo "    Level 2 directory $level2_dir is empty. Deleting..."
                     rmdir "$level2_dir"
@@ -113,5 +104,3 @@ for level1_dir in "$BASE_DIR"/*; do
 done
 
 echo "Script completed."
-
-
