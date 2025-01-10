@@ -6,8 +6,9 @@ BASE_DIR="/path/to/your/base/directory"
 # Initialize counters
 total_files=0
 duplicate_files=0
+moved_files=0
 
-echo "Starting preview mode. Base directory: $BASE_DIR"
+echo "Starting the script. Base directory: $BASE_DIR"
 
 # List Level 1 directories
 echo "Listing Level 1 directories in $BASE_DIR:"
@@ -29,7 +30,7 @@ for level1_dir in "$BASE_DIR"/*; do
             if [ -d "$level2_dir" ]; then
                 echo "  Processing Level 2 directory: $level2_dir"
 
-                # Check files in Level 2
+                # Move files from Level 2 to Level 1
                 for file in "$level2_dir"/*; do
                     if [ -f "$file" ]; then
                         # Increment total file counter
@@ -39,15 +40,29 @@ for level1_dir in "$BASE_DIR"/*; do
                         base_filename=$(basename "$file")
                         target_file="$level1_dir/$base_filename"
 
-                        # Check if a duplicate exists
+                        # Check for duplicates
                         if [ -e "$target_file" ]; then
-                            echo "    Duplicate found: $base_filename in $level1_dir"
+                            # Append timestamp to the filename to avoid overwriting
+                            timestamp=$(date +%Y%m%d%H%M%S)
+                            new_filename="${base_filename%.*}_$timestamp.${base_filename##*.}"
+                            target_file="$level1_dir/$new_filename"
+                            echo "    Duplicate found: $base_filename. Renaming to $new_filename."
                             ((duplicate_files++))
-                        else
-                            echo "    File would be moved: $base_filename to $level1_dir"
                         fi
+
+                        # Move the file
+                        mv -v "$file" "$target_file"
+                        ((moved_files++))
                     fi
                 done
+
+                # Check if Level 2 directory is empty and delete it
+                if [ -z "$(ls -A "$level2_dir")" ]; then
+                    echo "    Level 2 directory $level2_dir is empty. Deleting..."
+                    rmdir "$level2_dir"
+                else
+                    echo "    Level 2 directory $level2_dir is not empty. Skipping deletion."
+                fi
             else
                 echo "  Skipping non-directory item in Level 2: $level2_dir"
             fi
@@ -58,7 +73,8 @@ for level1_dir in "$BASE_DIR"/*; do
 done
 
 echo "------------------------------------------"
-echo "Preview Summary:"
-echo "Total files analyzed: $total_files"
-echo "Total duplicate files: $duplicate_files"
-echo "No files were moved during this preview."
+echo "Summary:"
+echo "Total files processed: $total_files"
+echo "Total files moved: $moved_files"
+echo "Total duplicate files handled: $duplicate_files"
+echo "Script completed."
