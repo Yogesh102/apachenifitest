@@ -1,29 +1,5 @@
 #!/bin/bash
 
-# Define the source and destination directories
-SOURCE_DIR="/path/to/source_directory"
-DEST_DIR="/path/to/destination_directory"
-
-# Ensure the destination directory exists
-mkdir -p "$DEST_DIR"
-
-# Loop through .metadata.properties.xml.v* files in the source directory
-find "$SOURCE_DIR" -maxdepth 1 -type f -name "*.metadata.properties.xml.v*" | while read -r metadata_file; do
-    # Extract the base name without the .metadata.properties.xml.v* extension
-    base_name=$(basename "$metadata_file" .metadata.properties.xml.v*)
-
-    # Move the .metadata.properties.xml.v* file
-    mv "$metadata_file" "$DEST_DIR/"
-
-    # Find and move files with the same base name but different extensions
-    find "$SOURCE_DIR" -maxdepth 1 -type f -name "$base_name.v*" ! -name "*.metadata.properties.xml.v*" -exec mv {} "$DEST_DIR/" \;
-
-    echo "Moved $metadata_file and its associated files to $DEST_DIR/"
-done
-
-
-#!/bin/bash
-
 # Define the target date
 TARGET_DATE="2024-08-01T00:00:00" # ISO 8601 format
 
@@ -41,9 +17,9 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
-# Loop through .metadata.properties.xml files in the source directory
-find "$SOURCE_DIR" -maxdepth 1 -type f -name "*.metadata.properties.xml" | while read -r metadata_file; do
-    # Extract the 'created' field value
+# Loop through .metadata.properties.xml.v* files in the source directory
+find "$SOURCE_DIR" -type f -name "*.metadata.properties.xml.v*" | while read -r metadata_file; do
+    # Extract the 'cm:created' field value
     CREATED_DATE=$(grep -oP '<entry key="cm:created">\K[^<]+' "$metadata_file")
 
     if [[ -n "$CREATED_DATE" ]]; then
@@ -56,18 +32,26 @@ find "$SOURCE_DIR" -maxdepth 1 -type f -name "*.metadata.properties.xml" | while
 
         # Compare the timestamps
         if [[ "$CREATED_TIMESTAMP" -ge "$TARGET_TIMESTAMP" ]]; then
-            # Extract the base name without the .metadata.properties.xml extension
-            base_name=$(basename "$metadata_file" .metadata.properties.xml)
+            # Extract the base name and version number
+            base_name=$(basename "$metadata_file" .metadata.properties.xml.v*)
+            version=$(echo "$metadata_file" | grep -oP '\.v\K[0-9]+')
 
-            # Move the .metadata.properties.xml file
-            mv "$metadata_file" "$DEST_DIR/"
+            if [[ -n "$version" ]]; then
+                # Find the corresponding actual file in any subdirectory
+                actual_file=$(find "$SOURCE_DIR" -type f -name "$base_name.v$version" -print -quit)
 
-            # Find and move files with the same base name but different extensions
-            find "$SOURCE_DIR" -maxdepth 1 -type f -name "$base_name.*" ! -name "*.metadata.properties.xml*" -exec mv {} "$DEST_DIR/" \;
-
-            echo "Moved $metadata_file and its associated files to $DEST_DIR/"
+                if [[ -n "$actual_file" ]]; then
+                    # Move the actual file to the destination directory
+                    mv "$actual_file" "$DEST_DIR/"
+                    echo "Moved $actual_file to $DEST_DIR/"
+                else
+                    echo "Corresponding actual file not found for $metadata_file"
+                fi
+            else
+                echo "Version number extraction failed for $metadata_file"
+            fi
         else
-            echo "File: $metadata_file has a 'created' date earlier than $TARGET_DATE ($CREATED_DATE)"
+            echo "File: $metadata_file has a 'cm:created' date earlier than $TARGET_DATE ($CREATED_DATE)"
         fi
     else
         echo "File: $metadata_file does not contain a 'cm:created' field."
