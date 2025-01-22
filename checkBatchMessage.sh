@@ -1,5 +1,29 @@
 #!/bin/bash
 
+# Define the source and destination directories
+SOURCE_DIR="/path/to/source_directory"
+DEST_DIR="/path/to/destination_directory"
+
+# Ensure the destination directory exists
+mkdir -p "$DEST_DIR"
+
+# Loop through .metadata.properties.xml.v* files in the source directory
+find "$SOURCE_DIR" -maxdepth 1 -type f -name "*.metadata.properties.xml.v*" | while read -r metadata_file; do
+    # Extract the base name without the .metadata.properties.xml.v* extension
+    base_name=$(basename "$metadata_file" .metadata.properties.xml.v*)
+
+    # Move the .metadata.properties.xml.v* file
+    mv "$metadata_file" "$DEST_DIR/"
+
+    # Find and move files with the same base name but different extensions
+    find "$SOURCE_DIR" -maxdepth 1 -type f -name "$base_name.v*" ! -name "*.metadata.properties.xml.v*" -exec mv {} "$DEST_DIR/" \;
+
+    echo "Moved $metadata_file and its associated files to $DEST_DIR/"
+done
+
+
+#!/bin/bash
+
 # Define the target date
 TARGET_DATE="2024-08-01T00:00:00" # ISO 8601 format
 
