@@ -38,4 +38,29 @@ SELECT
 FROM documents
 WHERE end_time IS NOT NULL AND start_time IS NOT NULL;
 
+SELECT n.id AS "Node ID", 
+       n.store_id AS "Store ID",
+       s.protocol || '://' || s.identifier AS "Store Name",
+       ROUND(u.content_size/1024/1024,2) AS "Size (MB)",
+       n.uuid AS "Document ID (UUID)",
+       n.audit_creator AS "Creator",
+       n.audit_created AS "Creation Date",
+       n.audit_modifier AS "Modifier",
+       n.audit_modified AS "Modification Date",
+       p1.string_value AS "Document Name",
+       u.content_url AS "Location"
+FROM alf_node n
+JOIN alf_node_properties p ON n.id = p.node_id
+JOIN alf_qname q ON p.qname_id = q.id
+JOIN alf_namespace ns ON ns.id = q.ns_id
+JOIN alf_content_data d ON p.long_value = d.id
+JOIN alf_content_url u ON d.content_url_id = u.id
+JOIN alf_store s ON n.store_id = s.id
+JOIN alf_node_properties p1 ON p1.node_id = n.id
+WHERE p1.qname_id IN (SELECT id FROM alf_qname WHERE local_name = 'name')
+  AND q.local_name = 'content'
+  AND ROUND(u.content_size/1024/1024,2) > 40
+ORDER BY u.content_size DESC;
+
+
 
