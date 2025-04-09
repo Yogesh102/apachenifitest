@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
-import { Node, NodeEntry, NodesApi, Version, VersionPaging, VersionsApi } from "@alfresco/js-api";
+import {  Node, NodeEntry, NodesApi, Version, VersionPaging, VersionsApi } from "@alfresco/js-api";
 import { AlfrescoApiService, NotificationService,AuthenticationService, AppConfigService } from "@alfresco/adf-core";
 import { takeUntil } from "rxjs/operators";
 import { Subject } from "rxjs";
@@ -212,33 +212,51 @@ export class FileVersionsComponent extends ToolbarComponent implements OnInit, O
 
     viewVersion(viewVersion: Event) {
         if (!(viewVersion instanceof CustomEvent)) {
-            
             return;
         }
+    
         const versionMetadata = viewVersion.detail.node;
+        const versionLabel = versionMetadata?.entry?.id;
+    
         if (versionMetadata?.entry?.content?.sizeInBytes >= MAX_VIEWABLE_FILE_SIZE) {
-           this.openAEVViewer(this.nodeId);
 
-          /* this.dialog.open(ErrorDialogComponent, {
-                width: '400px',
-                data: {
-                  message: 'The file is too large. You can view it in AEV.',
-                  nodeId: this.nodeId     
+            const nodeRef = `workspace://SpacesStore/${this.nodeId}`;
+
+            this.alfrescoApi.getInstance().contentClient.callCustomApi(
+                `/api/version?noderef=${encodeURIComponent(nodeRef)}`,
+                'GET',
+                {}, {}, {}, {}, {}, ['application/json'], ['application/json'], {'String': 'String'}
+              ).then((response: any) => {
+                const versionLabel = versionMetadata?.entry?.id;
+                const match = response?.versions?.find((v: any) => v.label === versionLabel);
+            
+                if (match?.nodeRef) {
+                  const versionNodeId = match.nodeRef.split('/')[1]; // extract UUID from nodeRef
+                  this.openAEVViewer(versionNodeId);
+                } else {
+                  this.notifications.showError('Version node not found.');
                 }
-              });*/
-           //this.notifications.showError('DELTA.FILE_VERSION.FILE_TOO_LARGE_ERROR' + aevurl);
-            return;
+              })
+              .catch((error) => {
+                console.error('❌ Error fetching version node from custom API:', error);
+                this.notifications.showError('Failed to load version information.');
+              });
+         
+            
         }
+    
         if (BLOCKED_FILE_TYPE.includes(versionMetadata?.entry?.content?.mimeType)) {
             this.notifications.showError('DELTA.FILE_VERSION.VIEW_UNSUPPORTED_ERROR');
             return;
         }
+    
         this.versionsApi.getVersion(this.nodeId, versionMetadata?.entry?.id)
             .then(version => {
                 this.versionId = versionMetadata?.entry?.id;
-                this.version = this.convertToNode(version.entry!)
+                this.version = this.convertToNode(version.entry!);
             });
     }
+    
 
     /**
    * Trigger the automatic redirection to AEV viewer
@@ -255,7 +273,7 @@ export class FileVersionsComponent extends ToolbarComponent implements OnInit, O
   }
     generateAEVLink(ticket: string,nodeId: string, username: string): string {
         const baseUrl = this.appConfig.get('ecmHost') + '/OpenAnnotate/login/external.htm';
-        const nodeRef = `workspace://SpacesStore/${nodeId}`;
+        const nodeRef = `workspace://version2Store/${nodeId}`;
         const params = new URLSearchParams({
           username: username,
           mode: 'readOnly',
