@@ -216,33 +216,33 @@ export class FileVersionsComponent extends ToolbarComponent implements OnInit, O
         }
     
         const versionMetadata = viewVersion.detail.node;
-        const versionLabel = versionMetadata?.entry?.id;
+        //const versionLabel = versionMetadata?.entry?.id;
     
         if (versionMetadata?.entry?.content?.sizeInBytes >= MAX_VIEWABLE_FILE_SIZE) {
 
             const nodeRef = `workspace://SpacesStore/${this.nodeId}`;
 
             this.alfrescoApi.getInstance().contentClient.callCustomApi(
-                `/api/version?noderef=${encodeURIComponent(nodeRef)}`,
+                `/alfresco/service/api/version?nodeRef=${encodeURIComponent(nodeRef)}`,
                 'GET',
-                {}, {}, {}, {}, {}, ['application/json'], ['application/json'], {'String': 'String'}
+                {}, {}, {}, {}, null, ['application/json'], ['application/json']
               ).then((response: any) => {
                 const versionLabel = versionMetadata?.entry?.id;
-                const match = response?.versions?.find((v: any) => v.label === versionLabel);
+                const match = response?.find((v: any) => v.label === versionLabel);
             
                 if (match?.nodeRef) {
-                  const versionNodeId = match.nodeRef.split('/')[1]; // extract UUID from nodeRef
+                  const versionNodeId = match.nodeRef.replace(/^.*\//, ''); // extract UUID from nodeRef
                   this.openAEVViewer(versionNodeId);
+                  return;
                 } else {
                   this.notifications.showError('Version node not found.');
                 }
               })
               .catch((error) => {
-                console.error('❌ Error fetching version node from custom API:', error);
+                console.log('❌ Error fetching version node from custom API:', error);
                 this.notifications.showError('Failed to load version information.');
-              });
-         
-            
+              }); 
+            return;
         }
     
         if (BLOCKED_FILE_TYPE.includes(versionMetadata?.entry?.content?.mimeType)) {
