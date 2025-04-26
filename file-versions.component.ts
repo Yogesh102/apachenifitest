@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
-import {  Node, NodeEntry, NodesApi, Version, VersionPaging, VersionsApi } from "@alfresco/js-api";
-import { AlfrescoApiService, NotificationService,AuthenticationService, AppConfigService } from "@alfresco/adf-core";
+import { Node, NodeEntry, NodeAssociationEntry,NodesApi, Version, VersionPaging, VersionsApi } from "@alfresco/js-api";
+import { AlfrescoApiService, NotificationService, AuthenticationService, AppConfigService } from "@alfresco/adf-core";
 import { takeUntil } from "rxjs/operators";
 import { Subject } from "rxjs";
 import { Location } from "@angular/common";
@@ -94,7 +94,7 @@ export class FileVersionsComponent extends ToolbarComponent implements OnInit, O
                 this.store.dispatch(new SetSelectedNodesAction([]));
                 this.loadVersions({});
             });
-        
+
         this.actions$.pipe(ofType<ViewVersionAction>(VIEW_FILE_VERSION), takeUntil(this.onDestroy$))
             .subscribe(() => {
                 this.viewVersion(new CustomEvent('view-version', {
@@ -214,73 +214,104 @@ export class FileVersionsComponent extends ToolbarComponent implements OnInit, O
         if (!(viewVersion instanceof CustomEvent)) {
             return;
         }
-    
+
         const versionMetadata = viewVersion.detail.node;
         //const versionLabel = versionMetadata?.entry?.id;
-    
+
         if (versionMetadata?.entry?.content?.sizeInBytes >= MAX_VIEWABLE_FILE_SIZE) {
 
             const nodeRef = `workspace://SpacesStore/${this.nodeId}`;
-
-            this.alfrescoApi.getInstance().contentClient.callCustomApi(
-                `/alfresco/service/api/version?nodeRef=${encodeURIComponent(nodeRef)}`,
-                'GET',
-                {}, {}, {}, {}, null, ['application/json'], ['application/json']
-              ).then((response: any) => {
-                const versionLabel = versionMetadata?.entry?.id;
-                const match = response?.find((v: any) => v.label === versionLabel);
-            
-                if (match?.nodeRef) {
-                  const versionNodeId = match.nodeRef.replace(/^.*\//, ''); // extract UUID from nodeRef
-                  this.openAEVViewer(versionNodeId);
-                  return;
+          
+            this.isNodeInAllowedFolder(this.nodeId).then((isAllowed) => {
+                if (isAllowed) {
+                    
+                        this.alfrescoApi.getInstance().contentClient.callCustomApi(
+                            `/alfresco/service/api/version?nodeRef=${encodeURIComponent(nodeRef)}`,
+                            'GET',
+                            {}, {}, {}, {}, null, ['application/json'], ['application/json']
+                        ).then((response: any) => {
+                            const versionLabel = versionMetadata?.entry?.id;
+                            const match = response?.find((v: any) => v.label === versionLabel);
+        
+                            if (match?.nodeRef) {
+                                const versionNodeId = match.nodeRef.replace(/^.*\//, ''); // extract UUID from nodeRef
+                                this.openAEVViewer(versionNodeId);
+                                return;
+                            } else {
+                                this.notifications.showError('Version node not found.');
+                            }
+                        })
+                            .catch((error) => {
+                                console.log('❌ Error fetching version node from custom API:', error);
+                                this.notifications.showError('Failed to load version information.');
+                            });
+                        return;
+                    
                 } else {
-                  this.notifications.showError('Version node not found.');
+                  this.notifications.showError('This document is not in an AEV-enabled folder.');
+                  this.versionsApi.getVersion(this.nodeId, versionMetadata?.entry?.id)
+                  .then(version => {
+                      this.versionId = versionMetadata?.entry?.id;
+                      this.version = this.convertToNode(version.entry!);
+                  });
                 }
-              })
-              .catch((error) => {
-                console.log('❌ Error fetching version node from custom API:', error);
-                this.notifications.showError('Failed to load version information.');
-              }); 
-            return;
+              });
+           return;
         }
-    
+        
         if (BLOCKED_FILE_TYPE.includes(versionMetadata?.entry?.content?.mimeType)) {
             this.notifications.showError('DELTA.FILE_VERSION.VIEW_UNSUPPORTED_ERROR');
             return;
         }
+    }
+
+    isNodeInAllowedFolder(nodeId: string): Promise<boolean> {
+        const allowedFolders: string[] = this.appConfig.get('aev.allowedFolders') || [];
+        console.log("Configured AEV Folders" + allowedFolders);
+        let parentPaths: string[] = [];
+
+        return this.nodesApi.listParents(nodeId, { include: ['path'] })
+            .then((parentsResponse) => {
+
+                let entries: NodeAssociationEntry[];
+                entries = parentsResponse.list?.entries ?? [];
+                parentPaths =entries.map((entry: any) => entry.entry?.path?.name || '').filter((path) => !!path);
     
-        this.versionsApi.getVersion(this.nodeId, versionMetadata?.entry?.id)
-            .then(version => {
-                this.versionId = versionMetadata?.entry?.id;
-                this.version = this.convertToNode(version.entry!);
+                return parentPaths.some(parentPath =>
+                    allowedFolders.some(allowed => parentPath.includes(allowed))
+                );
+            })
+
+            .catch((error) => {
+                console.error('Error retrieving parent folders:', error);
+                return false;
             });
     }
-    
+
 
     /**
    * Trigger the automatic redirection to AEV viewer
    * @param nodeId - Alfresco Node ID
    */
-  openAEVViewer(nodeId: string): void {
-    const username = this.authService.getEcmUsername()??'';
-    const ecmTicket = this.authService.getTicketEcm()??'';
-    
-    const viewerUrl = this.generateAEVLink(ecmTicket, nodeId, username);
+    openAEVViewer(nodeId: string): void {
+        const username = this.authService.getEcmUsername() ?? '';
+        const ecmTicket = this.authService.getTicketEcm() ?? '';
 
-    // Open the URL directly using window.open()
-    window.open(viewerUrl, '_blank');
-  }
-    generateAEVLink(ticket: string,nodeId: string, username: string): string {
+        const viewerUrl = this.generateAEVLink(ecmTicket, nodeId, username);
+
+        // Open the URL directly using window.open()
+        window.open(viewerUrl, '_blank');
+    }
+    generateAEVLink(ticket: string, nodeId: string, username: string): string {
         const baseUrl = this.appConfig.get('ecmHost') + '/OpenAnnotate/login/external.htm';
         const nodeRef = `workspace://version2Store/${nodeId}`;
         const params = new URLSearchParams({
-          username: username,
-          mode: 'readOnly',
-          ticket: ticket,
-          docId: nodeRef
+            username: username,
+            mode: 'readOnly',
+            ticket: ticket,
+            docId: nodeRef
         }).toString();
-    
+
         return `${baseUrl}?${params.toString()}`;
     }
 
