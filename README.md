@@ -22,3 +22,11 @@ for file in Finance_part_*; do
     sed -i "1i$header" "$file"
 done
 
+<Connector port="9443" protocol="org.apache.coyote.http11.Http11NioProtocol"
+           SSLEnabled="true" maxThreads="150" scheme="https" secure="true"
+           keystoreFile="${JAVA_HOME}/lib/security/cacerts"
+           keystoreType="JKS" keystorePass="changeit"
+           keyAlias="your-cert-alias"
+           clientAuth="false" sslProtocol="TLS" />
+
+
