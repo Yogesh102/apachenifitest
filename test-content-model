@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Definition of the Intelligent Automation - PEGA Claims Application Document Model -->
+<model name="ia-claims:documentmodel" xmlns="http://www.alfresco.org/model/dictionary/1.0">
+
+    <description>Intelligent Automation - PEGA Claims Content Model</description>
+    <author>Naveen Nagaraj</author>
+    <version>1.0</version>
+
+    <imports>
+        <import uri="http://www.alfresco.org/model/dictionary/1.0" prefix="d"/>
+        <import uri="http://www.alfresco.org/model/content/1.0" prefix="cm"/>
+        <import uri="http://edms.delta.org/model/content/1.0" prefix="dd"/>
+    </imports>
+
+    <namespaces>
+        <namespace uri="http://ia-claimdocs.edms.delta.org/model/content/1.0" prefix="ia-claim"/>
+    </namespaces>
+
+    <types>
+        <type name="ia-claim:doc">
+            <title>ia-claim Document</title>
+            <description>
+                IA PEGA Claim Document
+            </description>
+            <parent>dd:doc</parent>
+            <properties>
+                <property name="ia-claim:documentType">
+                    <title>Document Type</title>
+                    <type>d:text</type>
+                    <mandatory>true</mandatory>
+                </property>
+                <property name="ia-claim:documentSource">
+                    <title>Document Source</title>
+                    <type>d:text</type>
+                    <mandatory>true</mandatory>
+                </property>
+                <property name="ia-claim:pxAttachKey">
+                    <title>Pega Attachment Key</title>
+                    <type>d:text</type>
+                    <mandatory>true</mandatory>
+                </property>
+                <property name="ia-claim:pxRefObjectKey">
+                    <title>Pega Object Key</title>
+                    <type>d:text</type>
+                    <mandatory>false</mandatory>
+                </property>
+                <property name="ia-claim:pyCategory">
+                    <title>Pega Category</title>
+                    <type>d:text</type>
+                    <mandatory>false</mandatory>
+                </property>
+                <property name="ia-claim:caseId">
+                    <title>Pega Case ID - Appeal or Grievance</title>
+                    <type>d:text</type>
+                    <mandatory>false</mandatory>
+                </property>
+                <property name="ia-claim:uploadedBy">
+                    <title>Uploaded By - User ID</title>
+                    <type>d:text</type>
+                    <mandatory>true</mandatory>
+                </property>
+                <property name="ia-claim:uploadedByName">
+                    <title>Uploaded By - User Name</title>
+                    <type>d:text</type>
+                    <mandatory>true</mandatory>
+                </property>
+                <property name="ia-claim:fileName">
+                    <title>ia-claim File name</title>
+                    <type>d:text</type>
+                    <mandatory>true</mandatory>
+                </property>
+                <!-- *********** Claim Related identifiers ************  -->
+                <property name="ia-claim:DCN">
+                    <title>DCN</title>
+                    <type>d:text</type>
+                    <mandatory>false</mandatory>
+                </property>
+                <!-- *********** Additions for ADAP (ART3-16733) ************  -->
+                <property name="ia-claim:updatedBy">
+                    <title>Updated By</title>
+                    <type>d:text</type>
+                    <mandatory>false</mandatory>
+                </property>
+                <property name="ia-claim:docVisibility">
+                    <title>Document Visibility</title>
+                    <type>d:text</type>
+                    <mandatory>false</mandatory>
+                </property>
+            </properties>
+        </type>
+
+    </types>
+</model>
