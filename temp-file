@@ -1,0 +1,12 @@
+<replicated-cache name="sessions">
+  <transaction mode="BATCH"/>
+</replicated-cache>
+<replicated-cache name="authenticationSessions">
+  <transaction mode="BATCH"/>
+</replicated-cache>
+<replicated-cache name="offlineSessions">
+  <transaction mode="BATCH"/>
+</replicated-cache>
+<replicated-cache name="clientSessions">
+  <transaction mode="BATCH"/>
+</replicated-cache>
