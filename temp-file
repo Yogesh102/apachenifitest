@@ -10,3 +10,21 @@
 <replicated-cache name="clientSessions">
   <transaction mode="BATCH"/>
 </replicated-cache>
+
+
+21:04:01,078 ERROR [org.jboss.as.controller.management-operation] (ServerService Thread Pool -- 21) WFLYCTL0013: Operation ("add") failed - address: ([
+    ("subsystem" => "infinispan"),
+    ("cache-container" => "keycloak"),
+    ("replicated-cache" => "sessions")
+]) - failure description: "WFLYCTL0436: Cannot register capability 'org.wildfly.clustering.cache.service-provider-registry.keycloak.sessions' at location '[
+    (\"subsystem\" => \"infinispan\"),
+    (\"cache-container\" => \"keycloak\"),
+    (\"replicated-cache\" => \"sessions\")
+]' as it is already registered in context 'global' at location(s) '[[
+    (\"subsystem\" => \"infinispan\"),
+    (\"cache-container\" => \"keycloak\"),
+    (\"distributed-cache\" => \"sessions\")
+]]'"
+21:04:01,204 ERROR [org.jboss.as.controller.management-operation] (Controller Boot Thread) "WFLYCTL0193: Failed executing subsystem infinispan boot operations"
+21:04:01,205 ERROR [org.jboss.as.controller.management-operation] (Controller Boot Thread) WFLYCTL0013: Operation ("parallel-subsystem-boot") failed - address: ([]) - failure description: "\"WFLYCTL0193: Failed executing subsystem infinispan boot operations\""
+21:04:01,211 FATAL [org.jboss.as.server] (Controller Boot Thread) WFLYSRV0056: Server boot has failed in an unrecoverable manner; exiting. See previous messages for details.
